@@ -1,7 +1,7 @@
-
-
 #include <iostream>
 #include "Game.h"
+#include "MainMenu.h"
+#include "BoardCell.h"
 #include "SFML/Graphics.hpp"
 #include "SFML/System.hpp"
 #include "SFML/Window.hpp"
