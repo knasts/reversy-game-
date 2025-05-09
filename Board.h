@@ -1,6 +1,7 @@
 #ifndef BOARD_H_DEFINED
 #define BOARD_H_DEFINED
 #include <SFML/Graphics.hpp>
+#include <vector>
 #include "MainMenu.h"
 #define Max_playing_menu 2
 using namespace std;
@@ -28,6 +29,7 @@ private:;
 
 	int whos_turn;
 	bool player1_turn();
+	bool can_make_move(int row, int col, int current_player);
 
 public:
 	Board(sf::RenderWindow& win, const sf::Color& col1, const sf::Color& col2, sf::Font& font);
@@ -35,10 +37,13 @@ public:
 	sf::Color color_pl2;
 
 	void draw_board_grid();
-	void draw_chip(int i, int j);
+	void draw_chip(int i, int j); 
 	void place_chip(const sf::Vector2f& mouse_pos);
-
 	void draw_all_chips();
+
+	std::vector<sf::Vector2f> avaliable_positions(int current_player);
+
+	void place_dots();
 
 };
 

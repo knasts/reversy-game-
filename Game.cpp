@@ -152,6 +152,7 @@ void Game::render() //visualisation where everything is
 		{
 			this->board->draw_board_grid();
 			this->board->draw_all_chips();
+			this->board->place_dots();
 			//this->board->place_chip(mouse_pos);
 		}
 	}
