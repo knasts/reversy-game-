@@ -1,2 +1,2 @@
 # reversy-game
-creating reversy game as my course work.
+created reversy game as my course work  ๋ ࣭ ⭑๋ ࣭ ⭑
