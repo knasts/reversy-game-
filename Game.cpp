@@ -100,8 +100,6 @@ void Game::pollevents() //check ivents
 						}
 					}
 				}
-				
-			
 				else if (this->currState == PLAYING && this->board)
 				{
 					this->board->place_chip(mouse_pos);
@@ -124,12 +122,26 @@ void Game::update() //where game is
 		this->mainMenu->update_button(world_pos);
 	}
 
-	else if (this->currState == PLAYING && !this->board_created)
+	else if (this->currState == PLAYING)
 	{
-		const sf::Color col1 = this->mainMenu->button_color_pl1;
-		const sf::Color col2 = this->mainMenu->button_color_pl2;
-		this->board = new Board(*this->window, col1, col2, MainMenu::get_font());
-		this->board_created = true;
+		if (!this->board_created)
+		{
+			const sf::Color col1 = this->mainMenu->button_color_pl1;
+			const sf::Color col2 = this->mainMenu->button_color_pl2;
+			this->board = new Board(*this->window, col1, col2, MainMenu::get_font());
+			this->board_created = true;
+		}
+		else
+		{
+			if (this->board->show_pass_move && this->board->pass_clock.getElapsedTime().asSeconds() >= 2.0f
+				&& this->board->pause)
+			{
+				this->board->whos_turn++;
+				this->board->pause = false;
+				this->board->show_pass_move = false;
+			}
+			else if (!this->board->pause) this->board->check_turn();
+		}
 	}
 }
 
@@ -153,7 +165,7 @@ void Game::render() //visualisation where everything is
 			this->board->draw_board_grid();
 			this->board->draw_all_chips();
 			this->board->place_dots();
-			//this->board->place_chip(mouse_pos);
+			this->board->draw_play_texts();
 		}
 	}
 

@@ -16,6 +16,9 @@ Board::Board(sf::RenderWindow& win, const sf::Color& col1, const sf::Color& col2
 	this->color_pl2 = col2;
 	this->cell_size = 60.f;
 	this->whos_turn = 0;
+	this->game_over = false;
+	this->show_pass_move = false;
+	this->pause = false;
 
 	float total_width = 8 * cell_size;
 	float start_x = ((win.getSize().x - total_width) / 2.f) + 40.f;
@@ -30,7 +33,6 @@ Board::Board(sf::RenderWindow& win, const sf::Color& col1, const sf::Color& col2
 			board_info[i][j].status = 0;
 			board_info[i][j].color = sf::Color::White;
 			board_info[i][j].position = sf::Vector2f(start_x + j * cell_size, start_y + i * cell_size);
-
 		}
 
 	board_info[3][3].status = 1; //player 1
@@ -49,18 +51,82 @@ Board::Board(sf::RenderWindow& win, const sf::Color& col1, const sf::Color& col2
 	playing_menu[0].setFont(MainMenu::get_font());
 	playing_menu[0].setFillColor(Main_color);
 	playing_menu[0].setString("Turn:");
-	playing_menu[0].setCharacterSize(58);
-	playing_menu[0].setPosition(153, 7);
+	playing_menu[0].setCharacterSize(55);
+	playing_menu[0].setPosition(183, 11);
 
-	whos_turn = 2;
+	playing_menu[1].setFont(MainMenu::get_font());
+	playing_menu[1].setFillColor(col1);
+	playing_menu[1].setString("PLAYER 1");
+	playing_menu[1].setCharacterSize(60);
+	playing_menu[1].setPosition(350, 8);
+	playing_menu[1].setOutlineThickness(1.2);
+	playing_menu[1].setOutlineColor(Main_darker);
+
+	playing_menu[2].setFont(MainMenu::get_font());
+	playing_menu[2].setFillColor(col2);
+	playing_menu[2].setString("PLAYER 2");
+	playing_menu[2].setCharacterSize(60);
+	playing_menu[2].setPosition(350, 8);
+	playing_menu[2].setOutlineThickness(1.2);
+	playing_menu[2].setOutlineColor(Main_darker);
+
+	playing_menu[5].setFont(MainMenu::get_font());
+	playing_menu[5].setFillColor(Main_color);
+	playing_menu[5].setString("DRAW!");
+	playing_menu[5].setCharacterSize(60);
+	playing_menu[5].setPosition(350, 8);
+	playing_menu[5].setOutlineThickness(1.2);
+	playing_menu[5].setOutlineColor(Main_darker);
+
+	playing_menu[4].setFont(MainMenu::get_font());
+	playing_menu[4].setFillColor(Main_color);
+	playing_menu[4].setString("Winner: ");
+	playing_menu[4].setCharacterSize(55);
+	playing_menu[4].setPosition(163, 7);
+
+	playing_menu[3].setFont(MainMenu::get_font());
+	playing_menu[3].setFillColor(Main_color);
+	playing_menu[3].setString("GAME OVER!");
+	playing_menu[3].setCharacterSize(80);
+	playing_menu[3].setPosition(170, 63);
+
+	playing_menu[6].setFont(MainMenu::get_font());
+	playing_menu[6].setFillColor(Main_color);
+	playing_menu[6].setString("Passing turn~~");
+	playing_menu[6].setCharacterSize(55);
+	playing_menu[6].setPosition(183, 67);
+
+	whos_turn = 1;
 }
+
 
 bool Board::player1_turn()
 {
 	return (whos_turn % 2) == 0; 
 }
 
+void Board::draw_play_texts()
+{
+	if (!game_over)
+	{
+		win->draw(playing_menu[0]);
+		if (player1_turn()) win->draw(playing_menu[1]);
+		else win->draw(playing_menu[2]);
 
+		if (show_pass_move && pass_clock.getElapsedTime().asSeconds() < 2.0f)
+		{
+			win->draw(playing_menu[6]);
+		}
+	}
+	else
+	{
+		win->draw(playing_menu[3]);
+		win->draw(playing_menu[4]);
+		if(counter_pl1 > counter_pl2) win->draw(playing_menu[1]);
+		else if(counter_pl1 < counter_pl2) win->draw(playing_menu[2]);
+		else win->draw(playing_menu[5]);	
+	}
+}
 
 void Board::draw_board_grid()
 {
@@ -88,36 +154,112 @@ void Board::draw_board_grid()
 	}
 }
 
+void Board::check_turn()
+{
+	//перевіряємо чи гра зікінчилася
+	bool pl1_move = player_can_make_move(1);
+	bool pl2_move = player_can_make_move(2);
+
+	if (!pl1_move && !pl2_move)
+	{
+		curr_game_over();
+		return;
+	}
+	else if ((player1_turn() && !pl1_move && pl2_move) || (!player1_turn() && pl1_move && !pl2_move))
+	{
+		std::cout << "no moves, skipping turn" << std::endl;
+		show_pass_move = true;
+		pass_clock.restart();
+		pause = true;
+	}
+	else
+	{
+		show_pass_move = false;
+	}
+}
 
 
 void Board::place_chip(const sf::Vector2f& mouse_pos)
 {
-	for(int i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
+	{
 		for (int j = 0; j < 8; j++)
 		{
-			std::cout << "Clicked: " << mouse_pos.x << ", " << mouse_pos.y << std::endl;
 			BoardChip& chip = board_info[i][j];
 			sf::FloatRect bounds(chip.position, sf::Vector2f(cell_size, cell_size));
 
-			if (chip.status == 0 && bounds.contains(mouse_pos))
+			if (chip.status == 0 && bounds.contains(mouse_pos) && check_this_move(i, j))
 			{
+				int current_player = 0;
 				if (player1_turn())
 				{
 					chip.status = 1;
 					chip.color = this->color_pl1;
+					current_player = 1;
 					counter_pl1++;
 				}
 				else
 				{
 					chip.status = 2;
 					chip.color = this->color_pl2;
+					current_player = 2;
 					counter_pl2++;
 				}
-				std::cout << "Placed chip for player " << (player1_turn() ? 1 : 2) << " at " << i << "," << j << std::endl;
+				flip_chips(i, j, current_player);
+				show_pass_move = false;
 				whos_turn++;
+				check_turn();
+				break;
 			}
 		}
+	}
 }
+
+
+void Board::flip_chips(int row, int col, int current_player)
+{
+	int opp = (current_player == 1) ? 2 : 1;
+
+	sf::Color player_color = (current_player == 1) ? color_pl1 : color_pl2;
+
+	for (int k = 0; k < 8; ++k)
+	{
+		int x = row + dx[k];
+		int y = col + dy[k];
+
+		std::vector<std::pair<int, int>> to_flip;
+
+		while (x >= 0 && x < 8 && y >= 0 && y < 8)
+		{
+			if (board_info[x][y].status == opp) to_flip.push_back({ x, y });
+			else if (board_info[x][y].status == current_player)
+			{
+				for (auto& p : to_flip)
+				{
+					board_info[p.first][p.second].status = current_player;
+					board_info[p.first][p.second].color = player_color;
+					if (current_player == 1)
+					{
+						counter_pl1++;
+						counter_pl2--;
+					}
+					else
+					{
+						counter_pl1--;
+						counter_pl2++;
+					}
+				}
+				break;
+			}
+			else break;
+			
+			x += dx[k];
+			y += dy[k];
+		}
+	}
+
+}
+
 
 void Board::draw_chip(int i, int j)
 {
@@ -142,14 +284,11 @@ void Board::draw_all_chips()
 			draw_chip(i, j);
 }
 
-bool Board::can_make_move(int row, int col, int current_player)
+bool Board::check_this_move(int row, int col, int current_player)
 {
 	if (board_info[row][col].status != 0) return false;
 
 	int opp = (current_player == 1) ? 2 : 1;
-
-	const int dx[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
-	const int dy[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
 
 	for (int k = 0; k < 8; k++)
 	{
@@ -174,26 +313,53 @@ bool Board::can_make_move(int row, int col, int current_player)
 	return false;
 }
 
-std::vector<sf::Vector2f> Board::avaliable_positions(int current_player)
+bool Board::check_this_move(int row, int col)
+{
+	if (board_info[row][col].status != 0) return false;
+
+	int current_player = player1_turn() ? 1 : 2;
+	int opp = (current_player == 1) ? 2 : 1;
+
+	for (int k = 0; k < 8; k++)
+	{
+		int x = row + dx[k];
+		int y = col + dy[k];
+		bool opp_found = false;
+
+		while (x >= 0 && x < 8 && y >= 0 && y < 8)
+		{
+			if (board_info[x][y].status == opp) opp_found = true;
+			else if (board_info[x][y].status == current_player)
+			{
+				if (opp_found) return true;
+				else break;
+			}
+			else break;
+
+			x += dx[k];
+			y += dy[k];
+		}
+	}
+	return false;
+}
+
+std::vector<sf::Vector2f> Board::avaliable_positions()
 {
 	std::vector<sf::Vector2f> moves_positions;
 
 	for (int i = 0; i < 8; ++i)
-	{
 		for (int j = 0; j < 8; ++j)
 		{
-			if (can_make_move(i, j, current_player))
+			if (check_this_move(i, j))
 				moves_positions.push_back(board_info[i][j].position);
 
 		}
-	}
 	return moves_positions;
 }
 
 void Board::place_dots() 
 {
-	int current_player = player1_turn() ? 1 : 2;
-	std::vector<sf::Vector2f> moves = avaliable_positions(player1_turn() ? 1 : 2);
+	std::vector<sf::Vector2f> moves = avaliable_positions();
 
 	for (const auto& pos: moves)
 	{
@@ -205,3 +371,18 @@ void Board::place_dots()
 		win->draw(dot);
 	}
 }
+
+bool Board::player_can_make_move(int player)
+{
+	for (int i = 0; i < 8; ++i)
+		for (int j = 0; j < 8; ++j)
+			if (check_this_move(i, j, player)) return true;
+	return false;
+}
+
+
+void Board::curr_game_over()
+{
+	game_over = true;	
+}
+
