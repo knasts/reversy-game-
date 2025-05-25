@@ -19,6 +19,8 @@ Board::Board(sf::RenderWindow& win, const sf::Color& col1, const sf::Color& col2
 	this->game_over = false;
 	this->show_pass_move = false;
 	this->pause = false;
+	this->hide_board = false;
+	this->game_end_clock_started = false;
 
 	float total_width = 8 * cell_size;
 	float start_x = ((win.getSize().x - total_width) / 2.f) + 40.f;
@@ -96,9 +98,20 @@ Board::Board(sf::RenderWindow& win, const sf::Color& col1, const sf::Color& col2
 	playing_menu[6].setCharacterSize(55);
 	playing_menu[6].setPosition(183, 67);
 
-	whos_turn = 1;
-}
+	playing_menu[7].setFont(MainMenu::get_font());
+	playing_menu[7].setFillColor(Main_darker);
+	playing_menu[7].setString("New game");
+	playing_menu[7].setCharacterSize(70);
+	playing_menu[7].setPosition(160, 280);
 
+	playing_menu[8].setFont(MainMenu::get_font());
+	playing_menu[8].setFillColor(Main_darker);
+	playing_menu[8].setString("Exit");
+	playing_menu[8].setCharacterSize(70);
+	playing_menu[8].setPosition(515, 280);
+
+	whos_turn = 2;
+}
 
 bool Board::player1_turn()
 {
@@ -113,7 +126,7 @@ void Board::draw_play_texts()
 		if (player1_turn()) win->draw(playing_menu[1]);
 		else win->draw(playing_menu[2]);
 
-		if (show_pass_move && pass_clock.getElapsedTime().asSeconds() < 2.0f)
+		if (show_pass_move && pass_clock.getElapsedTime().asSeconds() < 1.3)
 		{
 			win->draw(playing_menu[6]);
 		}
@@ -124,12 +137,24 @@ void Board::draw_play_texts()
 		win->draw(playing_menu[4]);
 		if(counter_pl1 > counter_pl2) win->draw(playing_menu[1]);
 		else if(counter_pl1 < counter_pl2) win->draw(playing_menu[2]);
-		else win->draw(playing_menu[5]);	
+		else win->draw(playing_menu[5]);
+
+		float end_seconds = game_end_clock.getElapsedTime().asSeconds();
+
+		if(end_seconds >= 3.0f)
+		{
+			if(!hide_board) hide_board = true;
+
+			win->draw(playing_menu[7]);
+			win->draw(playing_menu[8]);
+		}
 	}
 }
 
 void Board::draw_board_grid()
 {
+	if (hide_board) return;
+
 	int rows = 8;
 	int cols = 8;
 
@@ -154,6 +179,36 @@ void Board::draw_board_grid()
 	}
 }
 
+bool Board::restart_clicked(const sf::Vector2f& mouse_pos) const
+{
+	sf::FloatRect bounds = playing_menu[7].getGlobalBounds();
+	return bounds.contains(mouse_pos);
+}
+
+bool Board::end_clicked(const sf::Vector2f& mouse_pos) const
+{
+	sf::FloatRect bounds = playing_menu[8].getGlobalBounds();
+	return bounds.contains(mouse_pos);
+}
+
+void Board::update_button(const sf::Vector2f& mouse_pos)
+{
+	sf::FloatRect bounds = playing_menu[7].getGlobalBounds();
+	sf::FloatRect boundss = playing_menu[8].getGlobalBounds();
+
+	if (bounds.contains(mouse_pos))
+	{
+		playing_menu[7].setFillColor(Main_color); //при наведенні
+	}
+	else playing_menu[7].setFillColor(Main_darker);
+
+	if (boundss.contains(mouse_pos))
+	{
+		playing_menu[8].setFillColor(Main_color); //при наведенні
+	}
+	else playing_menu[8].setFillColor(Main_darker);
+}
+
 void Board::check_turn()
 {
 	//перевіряємо чи гра зікінчилася
@@ -163,6 +218,11 @@ void Board::check_turn()
 	if (!pl1_move && !pl2_move)
 	{
 		curr_game_over();
+		if (!game_end_clock_started)
+		{
+			game_end_clock.restart();
+			game_end_clock_started = true;
+		}
 		return;
 	}
 	else if ((player1_turn() && !pl1_move && pl2_move) || (!player1_turn() && pl1_move && !pl2_move))
@@ -279,6 +339,7 @@ void Board::draw_chip(int i, int j)
 
 void Board::draw_all_chips()
 {
+	if (hide_board) return;
 	for (int i = 0; i < 8; ++i)
 		for (int j = 0; j < 8; ++j)
 			draw_chip(i, j);
@@ -366,7 +427,7 @@ void Board::place_dots()
 		sf::CircleShape dot(5.f);
 		dot.setFillColor(sf::Color(162, 0, 81, 255));
 		dot.setOrigin(5.f, 5.f);
-		dot.setPosition(pos.x + cell_size / 2 + 6.f, pos.y + cell_size / 2 + 6.f); 
+		dot.setPosition(pos.x + cell_size / 2 - 4.f, pos.y + cell_size / 2 - 4.f); 
 
 		win->draw(dot);
 	}

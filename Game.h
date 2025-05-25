@@ -19,11 +19,9 @@ private:
 	sf::RenderWindow* window;
 	sf::VideoMode video_mode;
 	sf::Event event;
-	//sf::CircleShape shape;
 
 	void init_variables();
 	void init_window();
-	sf::CircleShape create_circle(int width);
 	sf::RectangleShape create_board();
 	GameState currState;
 	MainMenu* mainMenu;

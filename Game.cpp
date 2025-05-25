@@ -29,12 +29,6 @@ void Game::init_window()
 	this->background.setTexture(&this->main_texture);
 }
 
-sf::CircleShape Game::create_circle(int width)
-{
-	sf::CircleShape shape(width);
-	shape.setFillColor(sf::Color::Cyan);
-	return shape;
-}
 
 sf::RectangleShape Game::create_board()
 {
@@ -56,7 +50,7 @@ Game::~Game()
 {
 	delete this->window;
 	delete this->mainMenu;
-	delete this->board;
+	if(this->board) delete this->board;
 }
 
 const bool Game::window_is_open() const
@@ -102,7 +96,21 @@ void Game::pollevents() //check ivents
 				}
 				else if (this->currState == PLAYING && this->board)
 				{
-					this->board->place_chip(mouse_pos);
+					if (this->board->game_over && this->board->hide_board)
+					{
+						if (this->board->end_clicked(mouse_pos))
+						{
+							this->window->close();
+						}
+						else if (this->board->restart_clicked(mouse_pos))
+						{
+							this->board_created = false;
+							delete this->board;
+							this->board = nullptr;
+							this->currState = MAIN_MENU;
+						}
+					}
+					else this->board->place_chip(mouse_pos);
 				}
 			}
 			break;
@@ -133,22 +141,28 @@ void Game::update() //where game is
 		}
 		else
 		{
-			if (this->board->show_pass_move && this->board->pass_clock.getElapsedTime().asSeconds() >= 2.0f
+			sf::Vector2i pixel_pos = sf::Mouse::getPosition(*this->window);
+			sf::Vector2f world_pos = this->window->mapPixelToCoords(pixel_pos);
+			this->mainMenu->update_button(world_pos);
+			if (this->board->show_pass_move && this->board->pass_clock.getElapsedTime().asSeconds() >= 1.3
 				&& this->board->pause)
 			{
 				this->board->whos_turn++;
 				this->board->pause = false;
 				this->board->show_pass_move = false;
 			}
-			else if (!this->board->pause) this->board->check_turn();
+			if (!this->board->pause) this->board->check_turn();
+			if (this->board->game_over && this->board->hide_board)
+			{
+				this->board->update_button(world_pos);
+			}
 		}
-	}
+	} 
 }
 
 void Game::render() //visualisation where everything is
 {
 	this->window->clear();
-
 	this->window->draw(this->background);
 
 	if (this->currState == MAIN_MENU)
@@ -162,12 +176,14 @@ void Game::render() //visualisation where everything is
 	{
 		if (this->board)
 		{
-			this->board->draw_board_grid();
-			this->board->draw_all_chips();
-			this->board->place_dots();
+			if (!this->board->game_over || (this->board->game_over && !this->board->hide_board))
+			{
+				this->board->draw_board_grid();
+				this->board->draw_all_chips();
+				if(!this->board->game_over) this->board->place_dots();
+			}
 			this->board->draw_play_texts();
 		}
 	}
-
 	this->window->display();
 }

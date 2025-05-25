@@ -102,7 +102,6 @@ void MainMenu::update_button(const sf::Vector2f& mouse_pos)
 		main_menu[3].setFillColor(Main_darker); //при наведенні
 	}
 	else main_menu[3].setFillColor(Main_color);
-
 }
 
 bool MainMenu::color_button_cl(const sf::Vector2f& mouse_pos)
@@ -137,9 +136,7 @@ void MainMenu::update_color_buttons()
 		{
 			color_button[i].setOutlineThickness(selected ? 3.f : 0.f);
 			color_button[i].setOutlineColor(Main_darker);
-		}
-		
-		
+		}		
 	}
 }
 

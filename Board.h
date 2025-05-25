@@ -3,7 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include "MainMenu.h"
-#define Max_playing_menu 7
+#define Max_playing_menu 9
 using namespace std;
 
 static const int dx[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
@@ -24,11 +24,11 @@ private:;
 	sf::VideoMode video_mode;
 	sf::RenderWindow* win;
 	sf::Font font;
+	sf::Clock game_end_clock;
 	BoardChip board_info[8][8];
 	int cell_size;
 	int counter_pl1;
 	int counter_pl2;
-	bool game_over;
 
 	bool player1_turn();
 	void draw_chip(int i, int j);
@@ -47,9 +47,17 @@ public:
 	bool show_pass_move;
 	int whos_turn;
 	bool pause;
+	bool game_over;
+	bool hide_board;
+	bool game_end_clock_started;
 
 	void draw_play_texts();
 	void draw_board_grid();
+
+	bool restart_clicked(const sf::Vector2f& mouse_pos) const;
+	bool end_clicked(const sf::Vector2f& mouse_pos) const;
+
+	void update_button(const sf::Vector2f& mouse_pos);
 	void place_chip(const sf::Vector2f& mouse_pos);
 	void draw_all_chips();
 	void place_dots();

@@ -9,7 +9,7 @@
 
 using namespace sf;
 
-int main()
+int WinMain()
 {
     Game game;
 
